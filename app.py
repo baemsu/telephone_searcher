@@ -33,34 +33,37 @@ def fetch_page(query):
         print(f"페이지 요청 실패. 상태 코드: {response.status_code}")
         return None
 
-# Function to extract best matching result link
+# Function to extract the best result link
 def extract_best_result_link(html, target_name):
     soup = BeautifulSoup(html, 'html.parser')
-    results = soup.find_all('div', class_='single-post')
+    results = soup.find_all('div', class_='titles')
 
     if not results:
         return None
 
-    target_name_clean = re.sub(r'\s+', '', target_name)
-
-    exact_match_link = None
-    partial_match_link = None
+    # Clean the target name
+    target_name_clean = target_name.strip().replace(" ", "")
 
     for result in results:
-        title_tag = result.find('div', class_='titles')
+        title_tag = result.find('h4')
         if title_tag:
-            title = title_tag.get_text(strip=True)
-            title_clean = re.sub(r'\s+', '', title)
-            link_tag = result.find('a', href=True)
+            title = title_tag.get_text(strip=True).replace(" ", "")
+            if title == target_name_clean:
+                link_tag = result.find('a', href=True)
+                if link_tag:
+                    return link_tag['href']
 
-            if title_clean == target_name_clean and link_tag:
-                exact_match_link = link_tag['href']
-                break
+    # If exact match not found, check for '(주)' prefix
+    for result in results:
+        title_tag = result.find('h4')
+        if title_tag:
+            title = title_tag.get_text(strip=True).replace(" ", "")
+            if title == f"(주){target_name_clean}":
+                link_tag = result.find('a', href=True)
+                if link_tag:
+                    return link_tag['href']
 
-            if title_clean == f"(주){target_name_clean}" and link_tag:
-                partial_match_link = link_tag['href']
-
-    return exact_match_link or partial_match_link or None
+    return None
 
 # Function to fetch article
 def fetch_article(link):
