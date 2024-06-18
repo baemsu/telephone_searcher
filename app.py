@@ -2,6 +2,7 @@ import requests
 import json
 import pandas as pd
 import streamlit as st
+import re
 
 def fetch_and_process_data(phone_number):
     # 요청 URL
@@ -65,6 +66,13 @@ def fetch_and_process_data(phone_number):
             'roadAddress': '검색결과없음'
         }]
 
+def clean_name(name):
+    # 상호명에서 불필요한 숫자와 문자를 제거하여 정제
+    name = re.sub(r'\d+', '', name)  # 숫자 제거
+    name = re.sub(r'\(.*?\)', '', name)  # 괄호 내용 제거
+    name = name.strip()  # 양쪽 공백 제거
+    return name
+
 def main():
     st.title("전화번호 검색 결과")
 
@@ -96,15 +104,12 @@ def main():
             csv = df.to_csv(index=False, encoding='utf-8-sig')
             st.download_button(label="CSV 파일 다운로드", data=csv, file_name='extracted_data.csv', mime='text/csv')
 
-            # 중복된 상호명을 찾고 정제된 데이터셋 생성
-            df['base_name'] = df['name'].apply(lambda x: x.split(' ')[0])
-            duplicate_names = df[df.duplicated(subset=['searchedPhoneNumber', 'base_name'], keep=False)]
-            grouped = duplicate_names.groupby('searchedPhoneNumber').agg({
-                'base_name': 'first'
-            }).reset_index()
+            # 상호명을 정제하고 중복된 상호명을 찾는 과정
+            df['clean_name'] = df['name'].apply(clean_name)
+            grouped = df.groupby('searchedPhoneNumber')['clean_name'].agg(lambda x: x.value_counts().index[0]).reset_index()
             grouped.columns = ['searchedPhoneNumber', 'name']
 
-            # 중복된 상호명 데이터셋 표시 및 다운로드
+            # 정제된 데이터셋 표시 및 다운로드
             st.write("정제된 데이터셋")
             st.dataframe(grouped)
             refined_csv = grouped.to_csv(index=False, encoding='utf-8-sig')
