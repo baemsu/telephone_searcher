@@ -2,4 +2,3 @@ requests
 pandas
 streamlit
 beautifulsoup4
-difflib
