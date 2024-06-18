@@ -106,7 +106,9 @@ def main():
 
             # 상호명을 정제하고 중복된 상호명을 찾는 과정
             df['clean_name'] = df['name'].apply(clean_name)
-            grouped = df.groupby('searchedPhoneNumber')['clean_name'].agg(lambda x: x.value_counts().index[0]).reset_index()
+            # 'clean_name' 컬럼을 공백으로 분할하여 가장 많이 나타나는 단어를 선택
+            df['base_name'] = df['clean_name'].apply(lambda x: x.split()[0] if x else x)
+            grouped = df.groupby('searchedPhoneNumber')['base_name'].agg(lambda x: x.value_counts().idxmax()).reset_index()
             grouped.columns = ['searchedPhoneNumber', 'name']
 
             # 정제된 데이터셋 표시 및 다운로드
