@@ -118,62 +118,67 @@ def extract_table_data(html):
     
     return extracted_data
 
-# Function to fetch and process data by phone number
-def fetch_and_process_data(phone_number):
+# Function to fetch and process data by phone number with retry mechanism
+def fetch_and_process_data(phone_number, max_retries=5, initial_delay=2):
     url = f"https://map.naver.com/p/api/search/allSearch?query={phone_number}&type=all&searchCoord=126.85150490000274%3B37.553927499999716&boundary="
 
-    response = requests.get(url)
+    delay = initial_delay
+    for attempt in range(max_retries):
+        response = requests.get(url)
+        if response.status_code == 200:
+            try:
+                data = response.json()
+            except json.JSONDecodeError:
+                st.error(f"JSON 디코딩에 실패했습니다: {response.text}")
+                return [{
+                    'searchedPhoneNumber': phone_number,
+                    'name': '검색결과없음',
+                    'tel': '검색결과없음',
+                    'category': '검색결과없음',
+                    'roadAddress': '검색결과없음'
+                }]
 
-    if response.status_code == 200:
-        try:
-            data = response.json()
-        except json.JSONDecodeError:
-            st.error(f"JSON 디코딩에 실패했습니다: {response.text}")
-            return [{
-                'searchedPhoneNumber': phone_number,
-                'name': '검색결과없음',
-                'tel': '검색결과없음',
-                'category': '검색결과없음',
-                'roadAddress': '검색결과없음'
-            }]
+            place_data = data.get('result', {}).get('place')
+            
+            if not place_data or not place_data.get('list'):
+                return [{
+                    'searchedPhoneNumber': phone_number,
+                    'name': '검색결과없음',
+                    'tel': '검색결과없음',
+                    'category': '검색결과없음',
+                    'roadAddress': '검색결과없음'
+                }]
 
-        place_data = data.get('result', {}).get('place')
-        
-        if not place_data or not place_data.get('list'):
-            return [{
-                'searchedPhoneNumber': phone_number,
-                'name': '검색결과없음',
-                'tel': '검색결과없음',
-                'category': '검색결과없음',
-                'roadAddress': '검색결과없음'
-            }]
+            place_list = place_data.get('list', [])
 
-        place_list = place_data.get('list', [])
+            extracted_data = []
+            for place in place_list:
+                name = place.get('name', '')
+                tel = place.get('tel', '')
+                category = ', '.join(place.get('category', []))
+                road_address = place.get('roadAddress', '')
+                extracted_data.append({
+                    'searchedPhoneNumber': phone_number,
+                    'name': name,
+                    'tel': tel,
+                    'category': category,
+                    'roadAddress': road_address
+                })
 
-        extracted_data = []
-        for place in place_list:
-            name = place.get('name', '')
-            tel = place.get('tel', '')
-            category = ', '.join(place.get('category', []))
-            road_address = place.get('roadAddress', '')
-            extracted_data.append({
-                'searchedPhoneNumber': phone_number,
-                'name': name,
-                'tel': tel,
-                'category': category,
-                'roadAddress': road_address
-            })
+            return extracted_data
+        else:
+            print(f"요청 실패. 상태 코드: {response.status_code}. {delay}초 후에 재시도합니다.")
+            time.sleep(delay)
+            delay *= 2  # Exponential backoff
 
-        return extracted_data
-    else:
-        st.error(f"요청 실패. 상태 코드: {response.status_code}")
-        return [{
-            'searchedPhoneNumber': phone_number,
-            'name': '검색결과없음',
-            'tel': '검색결과없음',
-            'category': '검색결과없음',
-            'roadAddress': '검색결과없음'
-        }]
+    st.error(f"{max_retries}번 시도 후 요청에 실패했습니다.")
+    return [{
+        'searchedPhoneNumber': phone_number,
+        'name': '검색결과없음',
+        'tel': '검색결과없음',
+        'category': '검색결과없음',
+        'roadAddress': '검색결과없음'
+    }]
 
 # Function to clean name
 def clean_name(name):
@@ -205,7 +210,6 @@ def main():
         for phone_number in phone_numbers:
             extracted_data = fetch_and_process_data(phone_number)
             all_extracted_data.extend(extracted_data)
-            time.sleep(1)  # Add delay between requests
 
         if all_extracted_data:
             df = pd.DataFrame(all_extracted_data)
@@ -262,4 +266,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
