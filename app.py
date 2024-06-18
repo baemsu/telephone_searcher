@@ -200,8 +200,8 @@ def main():
             # Using the refined names to fetch business registration details
             business_data = []
             for _, row in grouped.iterrows():
-                query_name = row['name']
-                result = fetch_page(query_name)
+                business_name = row['name']
+                result = fetch_page(business_name)
                 if result:
                     first_link = extract_first_result_link(result)
                     if first_link:
@@ -225,3 +225,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
