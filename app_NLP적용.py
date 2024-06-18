@@ -4,10 +4,6 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import streamlit as st
 import re
-from sentence_transformers import SentenceTransformer, util
-
-# 문장 임베딩 모델 로드
-model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
 # Function to fetch page
 def fetch_page(query):
@@ -31,13 +27,13 @@ def fetch_page(query):
     response = requests.get(full_url, headers=headers)
 
     if response.status_code == 200:
-        st.success("페이지 요청 성공")
+        print("페이지 요청 성공")
         return response.text
     else:
-        st.error(f"페이지 요청 실패. 상태 코드: {response.status_code}")
+        print(f"페이지 요청 실패. 상태 코드: {response.status_code}")
         return None
 
-# Function to extract the best matching result link
+# Function to extract best matching result link
 def extract_best_result_link(html, target_name):
     soup = BeautifulSoup(html, 'html.parser')
     results = soup.find_all('div', class_='single-post')
@@ -45,24 +41,26 @@ def extract_best_result_link(html, target_name):
     if not results:
         return None
 
-    best_match = None
-    highest_similarity = 0.0
+    target_name_clean = re.sub(r'\s+', '', target_name)
 
-    target_embedding = model.encode(target_name)
+    exact_match_link = None
+    partial_match_link = None
 
     for result in results:
         title_tag = result.find('div', class_='titles')
         if title_tag:
             title = title_tag.get_text(strip=True)
-            title_embedding = model.encode(title)
-            similarity = util.pytorch_cos_sim(target_embedding, title_embedding).item()
-            if similarity > highest_similarity:
-                highest_similarity = similarity
-                link_tag = result.find('a', href=True)
-                if link_tag:
-                    best_match = link_tag['href']
+            title_clean = re.sub(r'\s+', '', title)
+            link_tag = result.find('a', href=True)
 
-    return best_match
+            if title_clean == target_name_clean and link_tag:
+                exact_match_link = link_tag['href']
+                break
+
+            if title_clean == f"(주){target_name_clean}" and link_tag:
+                partial_match_link = link_tag['href']
+
+    return exact_match_link or partial_match_link or None
 
 # Function to fetch article
 def fetch_article(link):
@@ -85,10 +83,10 @@ def fetch_article(link):
     response = requests.get(full_url, headers=headers)
 
     if response.status_code == 200:
-        st.success("기사 페이지 요청 성공")
+        print("기사 페이지 요청 성공")
         return response.text
     else:
-        st.error(f"기사 페이지 요청 실패. 상태 코드: {response.status_code}")
+        print(f"기사 페이지 요청 실패. 상태 코드: {response.status_code}")
         return None
 
 # Function to extract table data
@@ -97,7 +95,7 @@ def extract_table_data(html):
     table = soup.find('table', class_='table_guide01')
     
     if not table:
-        st.error("테이블을 찾을 수 없습니다.")
+        print("테이블을 찾을 수 없습니다.")
         return None
 
     data = {}
