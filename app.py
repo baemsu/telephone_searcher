@@ -201,19 +201,26 @@ def main():
             business_data = []
             for _, row in grouped.iterrows():
                 business_name = row['name']
-                result = fetch_page(business_name)
-                if result:
-                    first_link = extract_first_result_link(result)
-                    if first_link:
-                        article_html = fetch_article(first_link)
-                        if article_html:
-                            extracted_data = extract_table_data(article_html)
-                            if extracted_data:
-                                extracted_data['searchedPhoneNumber'] = row['searchedPhoneNumber']
-                                business_data.append(extracted_data)
+                if business_name == "검색결과없음":
+                    business_data.append({'SearchedPhoneNumber': row['searchedPhoneNumber'], 'name': '검색결과없음', '사업자등록번호': '', '회사명(영문)': '', '업태': '', '종목': '', '주요제품': '', '전화번호': '', '팩스번호': '', '기업규모': '', '법인구분': '', '본사/지사': '', '법인형태': '', '설립일': '', '홈페이지': '', '대표자명': '', '법인등록번호': '', '회사주소': ''})
+                else:
+                    result = fetch_page(business_name)
+                    if result:
+                        first_link = extract_first_result_link(result)
+                        if first_link:
+                            article_html = fetch_article(first_link)
+                            if article_html:
+                                extracted_data = extract_table_data(article_html)
+                                if extracted_data:
+                                    extracted_data['SearchedPhoneNumber'] = row['searchedPhoneNumber']
+                                    extracted_data['name'] = business_name
+                                    business_data.append(extracted_data)
 
             if business_data:
                 business_df = pd.DataFrame(business_data)
+                columns = ['SearchedPhoneNumber', 'name', '사업자등록번호'] + [col for col in business_df.columns if col not in ['SearchedPhoneNumber', 'name', '사업자등록번호']]
+                business_df = business_df[columns]
+
                 st.write("사업자 등록 정보 데이터셋")
                 st.dataframe(business_df)
                 business_csv = business_df.to_csv(index=False, encoding='utf-8-sig')
