@@ -122,9 +122,26 @@ def extract_table_data(html):
 def fetch_and_process_data(phone_number, max_retries=5, initial_delay=2):
     url = f"https://map.naver.com/p/api/search/allSearch?query={phone_number}&type=all&searchCoord=126.85150490000274%3B37.553927499999716&boundary="
 
+    headers = {
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Encoding': 'gzip, deflate, br, zstd',
+        'Accept-Language': 'ko-KR,ko;q=0.8,en-US;q=0.6,en;q=0.4',
+        'Cache-Control': 'no-cache',
+        'Cookie': 'NNB=NPJOP2RQ4OAGK; NAC=AiscBMAJe939B; NACT=1; MM_PF=SEARCH; page_uid=iFaK2lqo1iCssmU/5+ossssst9V-397270; BUC=htSJvvHt8R3cQ7t_28Ox4DHSvcweJp-3iPnVEMLw0rQ=',
+        'Pragma': 'no-cache',
+        'Referer': f'https://map.naver.com/p/search/{phone_number}/place/1872692696?c=15.00,0,0,0,dh&placePath=%3Fentry%253Dbmp',
+        'Sec-Ch-Ua': '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+    }
+
     delay = initial_delay
     for attempt in range(max_retries):
-        response = requests.get(url)
+        response = requests.get(url, headers=headers)
         if response.status_code == 200:
             try:
                 data = response.json()
@@ -167,11 +184,11 @@ def fetch_and_process_data(phone_number, max_retries=5, initial_delay=2):
 
             return extracted_data
         else:
-            print(f"요청 실패. 상태 코드: {response.status_code}. {delay}초 후에 재시도합니다.")
+            print(f"요청 실패. 상태 코드: {response.status_code}. {attempt + 1}/{max_retries} 시도 후 {delay}초 대기 중...")
             time.sleep(delay)
             delay *= 2  # Exponential backoff
 
-    st.error(f"{max_retries}번 시도 후 요청에 실패했습니다.")
+    st.error(f"{max_retries}번의 시도 후에도 요청이 실패했습니다.")
     return [{
         'searchedPhoneNumber': phone_number,
         'name': '검색결과없음',
