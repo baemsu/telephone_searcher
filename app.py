@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import streamlit as st
 import re
+import difflib
 
 # Function to fetch page
 def fetch_page(query):
@@ -246,3 +247,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
