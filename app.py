@@ -4,23 +4,10 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import streamlit as st
 import re
-import os
-import urllib.request
 from sentence_transformers import SentenceTransformer, util
 
-# 모델 다운로드 경로 설정
-model_path = 'all-MiniLM-L6-v2'
-
-# 모델 다운로드
-if not os.path.exists(model_path):
-    url = "https://public.caller.ai/model-server/all-MiniLM-L6-v2/archive.gz"
-    urllib.request.urlretrieve(url, 'archive.gz')
-    os.makedirs(model_path, exist_ok=True)
-    os.system(f'tar -xzf archive.gz -C {model_path}')
-    os.remove('archive.gz')
-
 # 문장 임베딩 모델 로드
-model = SentenceTransformer(model_path)
+model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
 # Function to fetch page
 def fetch_page(query):
