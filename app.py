@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import streamlit as st
 import re
+import time
 
 # Function to fetch page
 def fetch_page(query):
@@ -204,6 +205,7 @@ def main():
         for phone_number in phone_numbers:
             extracted_data = fetch_and_process_data(phone_number)
             all_extracted_data.extend(extracted_data)
+            time.sleep(1)  # Add delay between requests
 
         if all_extracted_data:
             df = pd.DataFrame(all_extracted_data)
@@ -260,3 +262,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
