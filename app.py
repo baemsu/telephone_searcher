@@ -5,6 +5,7 @@ import pandas as pd
 import streamlit as st
 import re
 import time
+import os
 
 # Function to fetch page
 def fetch_page(query):
@@ -215,15 +216,15 @@ def main():
     
     if input_method == '직접 입력':
         phone_number = st.text_input("검색할 전화번호를 입력하세요")
-        file_name = st.text_input("저장할 파일명을 입력하세요")
         if phone_number:
             phone_numbers.append(phone_number)
+        file_name = st.text_input("저장할 파일명을 입력하세요")
 
     elif input_method == '파일 업로드':
         uploaded_file = st.file_uploader("전화번호 리스트가 있는 파일을 업로드하세요", type="txt")
-        file_name = st.text_input("저장할 파일명을 입력하세요")
         if uploaded_file is not None:
             phone_numbers = uploaded_file.read().decode('utf-8').splitlines()
+            file_name = os.path.splitext(uploaded_file.name)[0]  # Extract the file name without extension
 
     if phone_numbers and file_name:
         all_extracted_data = []
